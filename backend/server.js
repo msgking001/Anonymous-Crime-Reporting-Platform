@@ -8,6 +8,7 @@ import fs from 'fs';
 
 import connectDB from './config/db.js';
 import reportRoutes from './routes/reports.js';
+import postRoutes from './routes/posts.js';
 import adminRoutes from './routes/admin.js';
 import { generalLimiter } from './middleware/rateLimiter.js';
 
@@ -39,7 +40,7 @@ app.use(helmet({
 app.use(cors({
     origin: process.env.NODE_ENV === 'production'
         ? process.env.FRONTEND_URL
-        : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+        : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://localhost:5175'],
     credentials: true
 }));
 
@@ -54,6 +55,7 @@ app.use(generalLimiter);
 app.use('/uploads', express.static(uploadsDir));
 
 // API Routes
+app.use('/api/posts', postRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 
@@ -73,9 +75,8 @@ app.get('/', (req, res) => {
         version: '1.0.0',
         disclaimer: 'This platform is for crime reporting assistance only. It is NOT a replacement for an official FIR. For emergencies, please contact local authorities directly.',
         endpoints: {
-            submitReport: 'POST /api/reports',
-            checkStatus: 'GET /api/reports/status/:token',
-            uploadEvidence: 'POST /api/reports/upload',
+            getPosts: 'GET /api/posts',
+            createPost: 'POST /api/posts',
             admin: '/api/admin/* (requires authentication)'
         }
     });

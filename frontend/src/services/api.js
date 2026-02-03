@@ -10,52 +10,78 @@ const api = axios.create({
     }
 });
 
-// Generate session ID for rate limiting (no identity tracking)
+// Generate/Get session ID for rate limiting and voting
 const getSessionId = () => {
     let sessionId = sessionStorage.getItem('sessionId');
     if (!sessionId) {
-        sessionId = Math.random().toString(36).substring(2, 15);
+        sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         sessionStorage.setItem('sessionId', sessionId);
     }
     return sessionId;
 };
 
-// Add session ID to requests
+// Add session ID to every request
 api.interceptors.request.use((config) => {
     config.headers['x-session-id'] = getSessionId();
     return config;
 });
 
+// --- Feed & Posts API ---
+
 /**
- * Submit a new crime report
+ * Get paginated posts feed
+ * @param {number} page 
+ * @param {object} filters { category, city }
  */
-export const submitReport = async (reportData) => {
-    const response = await api.post('/reports', reportData);
+export const getPosts = async (page = 1, filters = {}) => {
+    const params = new URLSearchParams({ page, limit: 10 });
+    if (filters.category) params.append('category', filters.category);
+    if (filters.city) params.append('city', filters.city);
+
+    const response = await api.get(`/posts?${params.toString()}`);
     return response.data;
 };
 
 /**
- * Check report status using token
+ * Create a new post
+ * @param {FormData} postData 
  */
-export const checkReportStatus = async (token) => {
-    const response = await api.get(`/reports/status/${token}`);
-    return response.data;
-};
-
-/**
- * Upload evidence files
- */
-export const uploadEvidence = async (files) => {
-    const formData = new FormData();
-    files.forEach(file => {
-        formData.append('files', file);
-    });
-
-    const response = await api.post('/reports/upload', formData, {
+export const createPost = async (postData) => {
+    const response = await api.post('/posts', postData, {
         headers: {
             'Content-Type': 'multipart/form-data'
         }
     });
+    return response.data;
+};
+
+/**
+ * Submit a threat vote
+ * @param {string} postId 
+ * @param {string} voteType 'low_risk' | 'concerning' | 'urgent' | 'critical'
+ */
+export const submitVote = async (postId, voteType) => {
+    const response = await api.post(`/posts/${postId}/vote`, { voteType });
+    return response.data;
+};
+
+/**
+ * Check if user has voted on a post
+ * @param {string} postId 
+ */
+export const checkVoteStatus = async (postId) => {
+    const response = await api.get(`/posts/${postId}/vote`);
+    return response.data;
+};
+
+// --- Legacy Reports & Admin API (Restored) ---
+
+/**
+ * Check report status by token (Legacy)
+ * @param {string} token 
+ */
+export const checkReportStatus = async (token) => {
+    const response = await api.get(`/reports/status/${token}`);
     return response.data;
 };
 
@@ -85,20 +111,20 @@ export const getAdminReportDetails = async (reportId, adminKey) => {
 };
 
 /**
- * Admin: Get statistics
+ * Admin: Update report status
  */
-export const getAdminStats = async (adminKey) => {
-    const response = await api.get('/admin/reports/stats', {
+export const updateReportStatus = async (reportId, data, adminKey) => {
+    const response = await api.patch(`/admin/reports/${reportId}/status`, data, {
         headers: { 'x-admin-key': adminKey }
     });
     return response.data;
 };
 
 /**
- * Admin: Update report status
+ * Admin: Get stats
  */
-export const updateReportStatus = async (reportId, updateData, adminKey) => {
-    const response = await api.patch(`/admin/reports/${reportId}/status`, updateData, {
+export const getAdminStats = async (adminKey) => {
+    const response = await api.get('/admin/reports/stats', {
         headers: { 'x-admin-key': adminKey }
     });
     return response.data;

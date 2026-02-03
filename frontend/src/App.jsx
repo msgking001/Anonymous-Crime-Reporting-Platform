@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import Home from './pages/Home';
-import ReportForm from './pages/ReportForm';
+import Feed from './pages/Feed';
+import CreatePost from './pages/CreatePost';
 import StatusCheck from './pages/StatusCheck';
 import AdminDashboard from './pages/AdminDashboard';
 
@@ -17,7 +17,7 @@ const ShieldIcon = () => (
     </svg>
 );
 
-// Navigation Component
+// Desktop Navigation
 function Navigation() {
     const location = useLocation();
 
@@ -25,29 +25,62 @@ function Navigation() {
         <nav className="nav">
             <Link to="/" className="nav-brand">
                 <ShieldIcon />
-                <span>SafeReport</span>
+                <span>CrimeAware</span>
             </Link>
             <div className="nav-links">
                 <Link
                     to="/"
                     className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
                 >
-                    Home
+                    Feed
                 </Link>
                 <Link
-                    to="/report"
-                    className={`nav-link ${location.pathname === '/report' ? 'active' : ''}`}
+                    to="/create-post"
+                    className={`nav-link ${location.pathname === '/create-post' ? 'active' : ''}`}
                 >
-                    Submit Report
+                    Report Incident
                 </Link>
                 <Link
-                    to="/status"
-                    className={`nav-link ${location.pathname === '/status' ? 'active' : ''}`}
+                    to="/admin"
+                    className={`nav-link ${location.pathname === '/admin' ? 'active' : ''}`}
                 >
-                    Check Status
+                    Admin
                 </Link>
             </div>
         </nav>
+    );
+}
+
+// Mobile Bottom Navigation
+function MobileNavigation() {
+    const location = useLocation();
+
+    return (
+        <div className="mobile-nav">
+            <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>Feed</span>
+            </Link>
+            <Link to="/create-post" className={`mobile-nav-item ${location.pathname === '/create-post' ? 'active' : ''}`}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+                <span>Report</span>
+            </Link>
+            <Link to="/admin" className={`mobile-nav-item ${location.pathname === '/admin' ? 'active' : ''}`}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <span>Admin</span>
+            </Link>
+        </div>
     );
 }
 
@@ -56,11 +89,12 @@ function App() {
         <Router>
             <Navigation />
             <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/report" element={<ReportForm />} />
+                <Route path="/" element={<Feed />} />
+                <Route path="/create-post" element={<CreatePost />} />
                 <Route path="/status" element={<StatusCheck />} />
                 <Route path="/admin" element={<AdminDashboard />} />
             </Routes>
+            <MobileNavigation />
         </Router>
     );
 }

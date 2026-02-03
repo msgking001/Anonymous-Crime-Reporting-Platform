@@ -1,6 +1,5 @@
 import express from 'express';
-import Report from '../models/Report.js';
-import { decrypt } from '../utils/encryption.js';
+import Post from '../models/Post.js'; // Switched to Post model
 import { adminAuth } from '../middleware/adminAuth.js';
 import { statusUpdateValidation, handleValidationErrors } from '../middleware/sanitizer.js';
 
@@ -11,21 +10,17 @@ router.use(adminAuth);
 
 /**
  * GET /api/admin/reports
- * List all reports with filters
+ * List all posts with filters (Admin View)
  */
 router.get('/reports', async (req, res) => {
     try {
         const {
             category,
-            crimeType,
             status,
-            threatLevel,
-            assignedAuthority,
+            initialThreatLevel,
             spamFlag,
-            minConfidence,
-            maxConfidence,
-            minUrgency,
-            maxUrgency,
+            minThreatScore,
+            maxThreatScore,
             city,
             sortBy = 'createdAt',
             sortOrder = 'desc',
@@ -37,25 +32,16 @@ router.get('/reports', async (req, res) => {
         const filter = {};
 
         if (category) filter.category = category;
-        if (crimeType) filter.crimeType = crimeType;
         if (status) filter.status = status;
-        if (threatLevel) filter.threatLevel = threatLevel;
-        if (assignedAuthority) filter.assignedAuthority = assignedAuthority;
-        if (spamFlag !== undefined) filter.spamFlag = spamFlag === 'true';
+        if (initialThreatLevel) filter.initialThreatLevel = initialThreatLevel;
+        if (spamFlag !== undefined) filter['moderation.flagged'] = spamFlag === 'true'; // Mapped to moderation.flagged
         if (city) filter['location.city'] = new RegExp(city, 'i');
 
-        // Confidence score range
-        if (minConfidence || maxConfidence) {
-            filter.confidenceScore = {};
-            if (minConfidence) filter.confidenceScore.$gte = parseInt(minConfidence);
-            if (maxConfidence) filter.confidenceScore.$lte = parseInt(maxConfidence);
-        }
-
-        // Urgency score range
-        if (minUrgency || maxUrgency) {
-            filter.urgencyScore = {};
-            if (minUrgency) filter.urgencyScore.$gte = parseInt(minUrgency);
-            if (maxUrgency) filter.urgencyScore.$lte = parseInt(maxUrgency);
+        // Threat score range
+        if (minThreatScore || maxThreatScore) {
+            filter.threatScore = {};
+            if (minThreatScore) filter.threatScore.$gte = parseInt(minThreatScore);
+            if (maxThreatScore) filter.threatScore.$lte = parseInt(maxThreatScore);
         }
 
         // Sorting
@@ -65,14 +51,29 @@ router.get('/reports', async (req, res) => {
         // Pagination
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        const [reports, total] = await Promise.all([
-            Report.find(filter)
-                .select('-hashedToken -description') // Don't expose token hash or encrypted description in list
+        const [posts, total] = await Promise.all([
+            Post.find(filter)
                 .sort(sortOptions)
                 .skip(skip)
                 .limit(parseInt(limit)),
-            Report.countDocuments(filter)
+            Post.countDocuments(filter)
         ]);
+
+        // Transform posts to match expected Admin UI format where necessary
+        const reports = posts.map(post => ({
+            reportId: post.postId,
+            category: post.category,
+            crimeType: post.category, // reuse category as type
+            description: post.description,
+            location: post.location,
+            status: post.status,
+            threatLevel: post.initialThreatLevel, // Use initial or computed? Using initial for display
+            urgencyScore: post.threatScore, // Map threatScore to urgencyScore
+            confidenceScore: post.evidenceScore, // Map evidenceScore to confidenceScore
+            createdAt: post.createdAt,
+            spamFlag: post.moderation.flagged,
+            evidenceUrls: post.mediaUrl ? [post.mediaUrl] : []
+        }));
 
         res.json({
             success: true,
@@ -98,7 +99,7 @@ router.get('/reports', async (req, res) => {
 
 /**
  * GET /api/admin/reports/stats
- * Get report statistics
+ * Get post statistics
  */
 router.get('/reports/stats', async (req, res) => {
     try {
@@ -106,27 +107,23 @@ router.get('/reports/stats', async (req, res) => {
             totalReports,
             byStatus,
             byCategory,
-            byAuthority,
             spamCount,
             avgConfidence,
             avgUrgency
         ] = await Promise.all([
-            Report.countDocuments(),
-            Report.aggregate([
+            Post.countDocuments(),
+            Post.aggregate([
                 { $group: { _id: '$status', count: { $sum: 1 } } }
             ]),
-            Report.aggregate([
+            Post.aggregate([
                 { $group: { _id: '$category', count: { $sum: 1 } } }
             ]),
-            Report.aggregate([
-                { $group: { _id: '$assignedAuthority', count: { $sum: 1 } } }
+            Post.countDocuments({ 'moderation.flagged': true }),
+            Post.aggregate([
+                { $group: { _id: null, avg: { $avg: '$evidenceScore' } } }
             ]),
-            Report.countDocuments({ spamFlag: true }),
-            Report.aggregate([
-                { $group: { _id: null, avg: { $avg: '$confidenceScore' } } }
-            ]),
-            Report.aggregate([
-                { $group: { _id: null, avg: { $avg: '$urgencyScore' } } }
+            Post.aggregate([
+                { $group: { _id: null, avg: { $avg: '$threatScore' } } }
             ])
         ]);
 
@@ -136,7 +133,7 @@ router.get('/reports/stats', async (req, res) => {
                 totalReports,
                 byStatus: byStatus.reduce((acc, item) => ({ ...acc, [item._id]: item.count }), {}),
                 byCategory: byCategory.reduce((acc, item) => ({ ...acc, [item._id]: item.count }), {}),
-                byAuthority: byAuthority.reduce((acc, item) => ({ ...acc, [item._id]: item.count }), {}),
+                byAuthority: {}, // Not currently used in Post model
                 spamCount,
                 avgConfidence: avgConfidence[0]?.avg || 0,
                 avgUrgency: avgUrgency[0]?.avg || 0
@@ -154,24 +151,38 @@ router.get('/reports/stats', async (req, res) => {
 
 /**
  * GET /api/admin/reports/:id
- * Get single report details (with decrypted description)
+ * Get single report details
  */
 router.get('/reports/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
-        const report = await Report.findOne({ reportId: id }).select('-hashedToken');
+        const post = await Post.findOne({ postId: id });
 
-        if (!report) {
+        if (!post) {
             return res.status(404).json({
                 success: false,
                 error: 'Report not found'
             });
         }
 
-        // Decrypt description for admin viewing
-        const reportObj = report.toObject();
-        reportObj.description = decrypt(report.description);
+        // Map to expected format
+        const reportObj = {
+            reportId: post.postId,
+            category: post.category,
+            crimeType: post.category,
+            description: post.description,
+            location: post.location,
+            status: post.status,
+            statusMessage: post.statusMessage,
+            threatLevel: post.initialThreatLevel,
+            urgencyScore: post.threatScore,
+            confidenceScore: post.evidenceScore,
+            createdAt: post.createdAt,
+            spamFlag: post.moderation.flagged,
+            evidenceUrls: post.mediaUrl ? [post.mediaUrl] : [],
+            votes: post.votes
+        };
 
         res.json({
             success: true,
@@ -197,19 +208,18 @@ router.patch('/reports/:id/status',
     async (req, res) => {
         try {
             const { id } = req.params;
-            const { status, statusMessage, adminNotes } = req.body;
+            const { status, statusMessage } = req.body;
 
             const updateFields = { status };
             if (statusMessage !== undefined) updateFields.statusMessage = statusMessage;
-            if (adminNotes !== undefined) updateFields.adminNotes = adminNotes;
 
-            const report = await Report.findOneAndUpdate(
-                { reportId: id },
+            const post = await Post.findOneAndUpdate(
+                { postId: id },
                 updateFields,
                 { new: true }
-            ).select('-hashedToken -description');
+            );
 
-            if (!report) {
+            if (!post) {
                 return res.status(404).json({
                     success: false,
                     error: 'Report not found'
@@ -219,7 +229,11 @@ router.patch('/reports/:id/status',
             res.json({
                 success: true,
                 message: 'Report status updated',
-                data: report
+                data: {
+                    reportId: post.postId,
+                    status: post.status,
+                    statusMessage: post.statusMessage
+                }
             });
 
         } catch (error) {
