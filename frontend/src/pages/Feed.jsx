@@ -33,6 +33,7 @@ function Feed() {
         } catch (err) {
             console.error('Failed to fetch posts', err);
             setError('Failed to load feed. Please try again.');
+            setHasMore(false); // Stop infinite scroll loop on error
         } finally {
             setIsLoading(false);
         }

@@ -7,7 +7,6 @@ import reportRoutes from './routes/reportRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import postRoutes from './routes/postRoutes.js';
 
-dotenv.config();
 
 const app = express();
 
@@ -24,9 +23,6 @@ app.options('*', cors());
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Connect to Database
-connectDB();
 
 // Routes
 app.use('/api/posts', postRoutes);

@@ -31,7 +31,7 @@ export const getPosts = async (page = 1, filters = {}) => {
     if (filters.category) params.append("category", filters.category);
     if (filters.city) params.append("city", filters.city);
 
-    const response = await api.get(`/posts?${params.toString()}`);
+    const response = await api.get(`posts?${params.toString()}`);
     return response?.data;
 };
 
@@ -47,7 +47,7 @@ export const createPost = async (postData) => {
             crimeType: postData.get('crimeType') || 'physical'
         };
     }
-    const response = await api.post(`/posts`, payload);
+    const response = await api.post(`posts`, payload);
     return response?.data;
 };
 
@@ -58,49 +58,48 @@ export const uploadEvidence = async () => ({ success: true, data: { urls: [] } }
 // ---------------- VOTING ----------------
 
 export const submitVote = async (id, voteType) => {
-    const response = await api.post(`/posts/${id}/vote`, { voteType });
+    const response = await api.post(`posts/${id}/vote`, { voteType });
     return response?.data;
 };
 
 export const checkVoteStatus = async (id) => {
-    const response = await api.get(`/posts/${id}/vote`);
+    const response = await api.get(`posts/${id}/vote`);
     return response?.data;
 };
 
 // ---------------- ADMIN & STATUS ----------------
 
 export const checkReportStatus = async (token) => {
-    // Currently most status checking is done via the Feed or Admin dashboard
-    // This is a placeholder for the dedicated StatusCheck page if used
-    return { success: false, error: "Feature under maintenance." };
+    const response = await api.get(`posts/status/${token}`);
+    return response?.data;
 };
 
 export const getAdminReports = async (filters = {}, adminKey) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => { if (v) params.append(k, v); });
 
-    const response = await api.get(`/admin/reports?${params.toString()}`, {
+    const response = await api.get(`admin/reports?${params.toString()}`, {
         headers: { "x-admin-key": adminKey }
     });
     return response?.data;
 };
 
 export const getAdminReportDetails = async (id, adminKey) => {
-    const response = await api.get(`/admin/reports/${id}`, {
+    const response = await api.get(`admin/reports/${id}`, {
         headers: { "x-admin-key": adminKey }
     });
     return response?.data;
 };
 
 export const updateReportStatus = async (id, data, adminKey) => {
-    const response = await api.patch(`/admin/reports/${id}/status`, data, {
+    const response = await api.patch(`admin/reports/${id}/status`, data, {
         headers: { "x-admin-key": adminKey }
     });
     return response?.data;
 };
 
 export const getAdminStats = async (adminKey) => {
-    const response = await api.get(`/admin/reports/stats`, {
+    const response = await api.get(`admin/reports/stats`, {
         headers: { "x-admin-key": adminKey }
     });
     return response?.data;
