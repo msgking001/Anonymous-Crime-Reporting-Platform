@@ -64,7 +64,7 @@ export const getPosts = async (page = 1, filters = {}) => {
  * @param {FormData} postData
  */
 export const createPost = async (postData) => {
-    const response = await api.post(`/posts`, postData, {
+    const response = await api.post(`/report/create`, postData, {
         headers: {
             "Content-Type": "multipart/form-data",
         },

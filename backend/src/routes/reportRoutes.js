@@ -52,7 +52,7 @@ const upload = multer({
  * POST /api/reports
  * Submit a new anonymous crime report
  */
-router.post('/',
+router.post(['/', '/create'],
     reportSubmitLimiter,
     sanitizeInputs,
     reportValidation,

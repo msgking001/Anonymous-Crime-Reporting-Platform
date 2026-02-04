@@ -32,7 +32,7 @@ connectDB();
 
 // Routes
 app.use('/api/posts', postRoutes);
-app.use('/api/reports', reportRoutes);
+app.use(['/api/reports', '/api/report'], reportRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health Check
