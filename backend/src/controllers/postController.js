@@ -89,12 +89,12 @@ export const createPost = async (req, res) => {
         const post = new Post({
             postId: reportId,
             hashedToken: hashedTokenValue,
-            title: title || area || 'Anonymous Report',
+            title: title || effectiveArea || 'Anonymous Report',
             description: encrypt(description),
             category: category || 'Other',
             location: {
-                area: area || 'Unknown',
-                city: city || 'Unknown'
+                area: effectiveArea || 'Unknown',
+                city: effectiveCity || 'Unknown'
             },
             initialThreatLevel: initialThreatLevel || 'concerning',
             mediaUrls: []
