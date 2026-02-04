@@ -33,7 +33,7 @@ function CreatePost() {
         city: '',
         date: '',
         time: '',
-        initialThreatLevel: 'medium'
+        initialThreatLevel: 'concerning'
     });
     const [file, setFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);

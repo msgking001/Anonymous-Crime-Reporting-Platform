@@ -78,6 +78,20 @@ export const createPost = async (req, res) => {
         const effectiveCity = city || location?.city;
         const effectiveArea = area || location?.area;
 
+        // Threat level mapping to ensure Mongoose enum compliance
+        const threatLevelMap = {
+            'low': 'low_risk',
+            'medium': 'concerning',
+            'high': 'urgent',
+            'emergency': 'critical',
+            'low_risk': 'low_risk',
+            'concerning': 'concerning',
+            'urgent': 'urgent',
+            'critical': 'critical'
+        };
+
+        const mappedThreatLevel = threatLevelMap[initialThreatLevel] || 'concerning';
+
         if (!description || !effectiveCity) {
             return res.status(400).json({ success: false, error: 'Description and City are required' });
         }
@@ -96,7 +110,7 @@ export const createPost = async (req, res) => {
                 area: effectiveArea || 'Unknown',
                 city: effectiveCity || 'Unknown'
             },
-            initialThreatLevel: initialThreatLevel || 'concerning',
+            initialThreatLevel: mappedThreatLevel,
             mediaUrls: []
         });
 
