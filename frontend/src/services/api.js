@@ -1,131 +1,148 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+/**
+ * BASE URL
+ * MUST exist in Vercel Environment Variables
+ * Example:
+ * VITE_API_URL = https://your-backend.onrender.com
+ */
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-// Create axios instance
+if (!API_BASE_URL) {
+    throw new Error("VITE_API_URL is not defined. Check Vercel env vars.");
+}
+
+// Axios instance
 const api = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: `${API_BASE_URL}/api`,
     headers: {
-        'Content-Type': 'application/json'
-    }
+        "Content-Type": "application/json",
+    },
 });
 
-// Generate/Get session ID for rate limiting and voting
+// ---------------- SESSION ID (RATE LIMIT / VOTE CONTROL) ----------------
+
 const getSessionId = () => {
-    let sessionId = sessionStorage.getItem('sessionId');
+    let sessionId = sessionStorage.getItem("sessionId");
     if (!sessionId) {
-        sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        sessionStorage.setItem('sessionId', sessionId);
+        sessionId =
+            crypto.randomUUID?.() ||
+            Math.random().toString(36).substring(2) +
+            Math.random().toString(36).substring(2);
+        sessionStorage.setItem("sessionId", sessionId);
     }
     return sessionId;
 };
 
-// Add session ID to every request
 api.interceptors.request.use((config) => {
-    config.headers['x-session-id'] = getSessionId();
+    config.headers["x-session-id"] = getSessionId();
     return config;
 });
 
-// --- Feed & Posts API ---
+// ---------------- PUBLIC FEED (REPORTS) ----------------
 
 /**
- * Get paginated posts feed
- * @param {number} page 
+ * Get paginated reports feed
+ * @param {number} page
  * @param {object} filters { category, city }
  */
 export const getPosts = async (page = 1, filters = {}) => {
-    const params = new URLSearchParams({ page, limit: 10 });
-    if (filters.category) params.append('category', filters.category);
-    if (filters.city) params.append('city', filters.city);
+    const params = new URLSearchParams({
+        page,
+        limit: 10,
+    });
 
-    const response = await api.get(`/posts?${params.toString()}`);
+    if (filters.category) params.append("category", filters.category);
+    if (filters.city) params.append("city", filters.city);
+
+    const response = await api.get(`/reports?${params.toString()}`);
     return response.data;
 };
 
 /**
- * Create a new post
- * @param {FormData} postData 
+ * Create a new anonymous report
+ * @param {FormData} postData
  */
 export const createPost = async (postData) => {
-    const response = await api.post('/posts', postData, {
+    const response = await api.post(`/reports`, postData, {
         headers: {
-            'Content-Type': 'multipart/form-data'
-        }
+            "Content-Type": "multipart/form-data",
+        },
+    });
+    return response.data;
+};
+
+// ---------------- VOTING ----------------
+
+/**
+ * Submit a threat vote
+ * @param {string} reportId
+ * @param {string} voteType
+ */
+export const submitVote = async (reportId, voteType) => {
+    const response = await api.post(`/reports/${reportId}/vote`, {
+        voteType,
     });
     return response.data;
 };
 
 /**
- * Submit a threat vote
- * @param {string} postId 
- * @param {string} voteType 'low_risk' | 'concerning' | 'urgent' | 'critical'
+ * Check if user has voted
+ * @param {string} reportId
  */
-export const submitVote = async (postId, voteType) => {
-    const response = await api.post(`/posts/${postId}/vote`, { voteType });
+export const checkVoteStatus = async (reportId) => {
+    const response = await api.get(`/reports/${reportId}/vote`);
     return response.data;
 };
 
-/**
- * Check if user has voted on a post
- * @param {string} postId 
- */
-export const checkVoteStatus = async (postId) => {
-    const response = await api.get(`/posts/${postId}/vote`);
-    return response.data;
-};
-
-// --- Legacy Reports & Admin API (Restored) ---
+// ---------------- LEGACY STATUS CHECK ----------------
 
 /**
- * Check report status by token (Legacy)
- * @param {string} token 
+ * Check report status by token
+ * @param {string} token
  */
 export const checkReportStatus = async (token) => {
     const response = await api.get(`/reports/status/${token}`);
     return response.data;
 };
 
-/**
- * Admin: Get reports list
- */
-export const getAdminReports = async (filters, adminKey) => {
+// ---------------- ADMIN ----------------
+
+export const getAdminReports = async (filters = {}, adminKey) => {
     const params = new URLSearchParams();
+
     Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value);
     });
 
     const response = await api.get(`/admin/reports?${params.toString()}`, {
-        headers: { 'x-admin-key': adminKey }
+        headers: { "x-admin-key": adminKey },
     });
+
     return response.data;
 };
 
-/**
- * Admin: Get report details
- */
 export const getAdminReportDetails = async (reportId, adminKey) => {
     const response = await api.get(`/admin/reports/${reportId}`, {
-        headers: { 'x-admin-key': adminKey }
+        headers: { "x-admin-key": adminKey },
     });
     return response.data;
 };
 
-/**
- * Admin: Update report status
- */
 export const updateReportStatus = async (reportId, data, adminKey) => {
-    const response = await api.patch(`/admin/reports/${reportId}/status`, data, {
-        headers: { 'x-admin-key': adminKey }
-    });
+    const response = await api.patch(
+        `/admin/reports/${reportId}/status`,
+        data,
+        {
+            headers: { "x-admin-key": adminKey },
+        }
+    );
     return response.data;
 };
 
-/**
- * Admin: Get stats
- */
 export const getAdminStats = async (adminKey) => {
-    const response = await api.get('/admin/reports/stats', {
-        headers: { 'x-admin-key': adminKey }
+    const response = await api.get(`/admin/reports/stats`, {
+        headers: { "x-admin-key": adminKey },
     });
     return response.data;
 };
