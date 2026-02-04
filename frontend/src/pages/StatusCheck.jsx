@@ -169,7 +169,7 @@ function StatusCheck() {
                     </div>
 
                     <p style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                        {statusConfig.description}
+                        {statusConfig?.description || 'Loading status details...'}
                     </p>
 
                     {/* Report Details */}

@@ -1,6 +1,6 @@
 import express from 'express';
 import * as postController from '../controllers/postController.js';
-import { postCreationLimiter, voteLimiter } from '../middleware/rateLimiter.js';
+import { postCreationLimiter, voteLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 

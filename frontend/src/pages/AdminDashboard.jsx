@@ -360,17 +360,17 @@ function AdminDashboard() {
                             </tr>
                         </thead>
                         <tbody>
-                            {reports.length === 0 ? (
+                            {(reports || []).length === 0 ? (
                                 <tr>
                                     <td colSpan="9" style={{ textAlign: 'center', padding: '2rem' }}>
                                         No reports found
                                     </td>
                                 </tr>
                             ) : (
-                                reports.map(report => (
-                                    <tr key={report.reportId}>
-                                        <td>{new Date(report.createdAt).toLocaleDateString()}</td>
-                                        <td style={{ textTransform: 'capitalize' }}>{report.category.replace('_', ' ')}</td>
+                                (reports || []).map(report => (
+                                    <tr key={report._id || report.reportId}>
+                                        <td>{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                        <td style={{ textTransform: 'capitalize' }}>{(report.category || 'Other').replace('_', ' ')}</td>
                                         <td style={{ textTransform: 'capitalize' }}>{report.crimeType}</td>
                                         <td>{report.location?.city}</td>
                                         <td>
@@ -509,14 +509,14 @@ function AdminDashboard() {
                                         </div>
                                     </div>
 
-                                    {selectedReport.evidenceUrls && selectedReport.evidenceUrls.length > 0 && (
+                                    {selectedReport.evidenceUrls && (selectedReport.evidenceUrls || []).length > 0 && (
                                         <div style={{ marginBottom: '1.5rem' }}>
                                             <p style={{ margin: '0 0 0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                                                Evidence Files ({selectedReport.evidenceUrls.length})
+                                                Evidence Files ({(selectedReport.evidenceUrls || []).length})
                                             </p>
-                                            {selectedReport.evidenceUrls.map((url, i) => (
+                                            {(selectedReport.evidenceUrls || []).map((url, i) => (
                                                 <span key={i} className="badge badge-neutral" style={{ marginRight: '0.5rem' }}>
-                                                    {url.split('/').pop()}
+                                                    {url?.split('/').pop() || 'file'}
                                                 </span>
                                             ))}
                                         </div>

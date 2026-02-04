@@ -26,10 +26,10 @@ const PostCard = ({ post }) => {
         if (isVoting) return;
         setIsVoting(true);
         try {
-            const result = await submitVote(post.postId, type);
-            if (result.success) {
+            const result = await submitVote(post._id || post.postId, type);
+            if (result?.success) {
                 setVoteType(type);
-                setThreatLevel(result.data.threatLevel);
+                setThreatLevel(result.data?.threatLevel || post.threatLevel);
             }
         } catch (error) {
             console.error('Vote failed', error);
@@ -51,7 +51,7 @@ const PostCard = ({ post }) => {
     const getMediaUrl = (url) => {
         if (!url) return null;
         if (url.startsWith('http')) return url;
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const baseUrl = import.meta.env.VITE_API_URL;
         return `${baseUrl}${url}`;
     };
 
@@ -60,10 +60,10 @@ const PostCard = ({ post }) => {
             {/* Header */}
             <div className="post-header">
                 <div className="post-meta">
-                    <span className="category-badge">{post.category.replace('_', ' ')}</span>
-                    <span className="location-tag">📍 {post.location.area}, {post.location.city}</span>
+                    <span className="category-badge">{(post.category || 'Other').replace('_', ' ')}</span>
+                    <span className="location-tag">📍 {post.location?.area || 'Somewhere'}, {post.location?.city || 'Nowhere'}</span>
                 </div>
-                <span className="post-time">{formatDate(post.createdAt)}</span>
+                <span className="post-time">{post.createdAt ? formatDate(post.createdAt) : 'Recently'}</span>
             </div>
 
             {/* Content */}

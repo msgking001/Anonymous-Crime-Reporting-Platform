@@ -100,8 +100,8 @@ function Feed() {
                 hasMore={hasMore}
                 isLoading={isLoading}
             >
-                {posts.map(post => (
-                    <div key={post.postId} className="fade-in">
+                {(posts || []).map(post => (
+                    <div key={post._id || post.postId || Math.random()} className="fade-in">
                         <PostCard post={post} />
                     </div>
                 ))}
