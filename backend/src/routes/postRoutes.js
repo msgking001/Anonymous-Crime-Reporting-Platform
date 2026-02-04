@@ -17,4 +17,7 @@ router.post('/', postCreationLimiter, postController.createPost);
 router.post('/:id/vote', voteLimiter, postController.submitVote);
 router.get('/:id/vote', postController.checkVoteStatus);
 
+// Status Check
+router.get('/status/:token', postController.checkPostStatus);
+
 export default router;

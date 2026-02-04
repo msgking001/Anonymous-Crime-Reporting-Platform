@@ -5,7 +5,7 @@ import ThreatButtons from './ThreatButtons';
 const PostCard = ({ post }) => {
     const [voteType, setVoteType] = useState(null);
     const [isVoting, setIsVoting] = useState(false);
-    const [threatLevel, setThreatLevel] = useState(post.threatLevel);
+    const [threatLevel, setThreatLevel] = useState(post.threatLevel || post.initialThreatLevel || 'concerning');
 
     useEffect(() => {
         // Check if current user has voted

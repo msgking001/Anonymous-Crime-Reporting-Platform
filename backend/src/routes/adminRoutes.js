@@ -1,6 +1,8 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Post from '../models/Post.js';
 import { adminAuth } from '../middleware/adminAuth.js';
+import { decrypt } from '../utils/encryption.js';
 import { statusUpdateValidation, handleValidationErrors } from '../middleware/sanitizer.js';
 
 const router = express.Router();
@@ -64,7 +66,13 @@ router.get('/reports', async (req, res) => {
             reportId: post.postId || post._id,
             category: post.category,
             crimeType: post.category,
-            description: post.description,
+            description: (() => {
+                try {
+                    return decrypt(post.description) || post.description;
+                } catch (e) {
+                    return post.description;
+                }
+            })(),
             location: post.location || { city: post.city },
             status: post.status || 'submitted',
             threatLevel: post.initialThreatLevel || 'concerning',
@@ -170,7 +178,13 @@ router.get('/reports/:id', async (req, res) => {
             reportId: post.postId || post._id,
             category: post.category,
             crimeType: post.category,
-            description: post.description,
+            description: (() => {
+                try {
+                    return decrypt(post.description) || post.description;
+                } catch (e) {
+                    return post.description;
+                }
+            })(),
             location: post.location || { city: post.city },
             status: post.status || 'submitted',
             statusMessage: post.statusMessage,
