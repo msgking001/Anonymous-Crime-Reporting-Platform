@@ -18,12 +18,17 @@ function Feed() {
         try {
             const result = await getPosts(pageNum, currentFilters);
             if (result.success) {
+                const newPosts = result.data || [];
+                const pagination = result.pagination || {};
+
                 if (pageNum === 1) {
-                    setPosts(result.data.posts);
+                    setPosts(newPosts);
                 } else {
-                    setPosts(prev => [...prev, ...result.data.posts]);
+                    setPosts(prev => [...(prev || []), ...newPosts]);
                 }
-                setHasMore(result.data.pagination.hasMore);
+
+                // Derive hasMore: if current page is less than total pages
+                setHasMore(pagination.page < pagination.pages);
             }
         } catch (err) {
             console.error('Failed to fetch posts', err);
