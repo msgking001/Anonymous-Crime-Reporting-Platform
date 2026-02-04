@@ -12,7 +12,7 @@ if (!API_BASE_URL) {
 
 // Axios instance
 const api = axios.create({
-    baseURL: `${API_BASE_URL}/api`,
+    baseURL: API_BASE_URL,
     headers: {
         "Content-Type": "application/json",
     },
@@ -54,64 +54,31 @@ export const getPosts = async (page = 1, filters = {}) => {
     if (filters.city) params.append("city", filters.city);
 
     const response = await api.get(`/posts?${params.toString()}`);
-    return response.data;
+    return response?.data;
 };
 
 // ---------------- ANONYMOUS INCIDENT REPORTING ----------------
 
 /**
  * Create a new anonymous report (Incident Submission)
- * Maps frontend payload to backend strict validation
- * @param {FormData} formData
+ * Sends JSON to /api/posts as requried for FINAL PRODUCTION CONTRACT
+ * @param {object} formData
  */
-export const createPost = async (formData) => {
-    let evidenceUrls = [];
-
-    // 1. Handle Media Upload if present
-    const file = formData.get('media'); // 'media' is the field name in CreatePost.jsx
-    if (file) {
-        const uploadData = new FormData();
-        uploadData.append('files', file); // Backend expect 'files' field
-
-        try {
-            const uploadRes = await api.post('/reports/upload', uploadData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            if (uploadRes.data.success) {
-                evidenceUrls = uploadRes.data.data.urls;
-            }
-        } catch (uploadErr) {
-            console.error('File upload failed, proceeding without media', uploadErr);
-        }
+export const createPost = async (postData) => {
+    // If we received FormData from the legacy UI, extract the JSON parts
+    let payload = postData;
+    if (postData instanceof FormData) {
+        payload = {
+            category: postData.get('category'),
+            description: postData.get('description'),
+            area: postData.get('area'),
+            city: postData.get('city'),
+            initialThreatLevel: postData.get('initialThreatLevel')
+        };
     }
 
-    // 2. Enum and Data Mapping
-    const category = formData.get('category');
-    const threatMapping = {
-        'low_risk': 'low',
-        'concerning': 'medium',
-        'urgent': 'high',
-        'critical': 'emergency'
-    };
-
-    const payload = {
-        category,
-        crimeType: category === 'cyber_fraud' ? 'cyber' : 'physical',
-        description: formData.get('description'),
-        location: {
-            area: formData.get('area'),
-            city: formData.get('city')
-        },
-        threatLevel: threatMapping[formData.get('initialThreatLevel')] || 'medium',
-        incidentTime: {
-            date: formData.get('timeWindow') ? new Date().toISOString() : undefined
-        },
-        evidenceUrls
-    };
-
-    // 3. Final Submission to the correct legacy endpoint
-    const response = await api.post(`/reports`, payload);
-    return response.data;
+    const response = await api.post(`/posts`, payload);
+    return response?.data;
 };
 
 // ---------------- VOTING ----------------
@@ -125,7 +92,7 @@ export const submitVote = async (reportId, voteType) => {
     const response = await api.post(`/posts/${reportId}/vote`, {
         voteType,
     });
-    return response.data;
+    return response?.data;
 };
 
 /**
@@ -134,18 +101,7 @@ export const submitVote = async (reportId, voteType) => {
  */
 export const checkVoteStatus = async (reportId) => {
     const response = await api.get(`/posts/${reportId}/vote`);
-    return response.data;
-};
-
-// ---------------- LEGACY STATUS CHECK ----------------
-
-/**
- * Check report status by token
- * @param {string} token
- */
-export const checkReportStatus = async (token) => {
-    const response = await api.get(`/reports/status/${token}`);
-    return response.data;
+    return response?.data;
 };
 
 // ---------------- ADMIN ----------------
@@ -161,14 +117,14 @@ export const getAdminReports = async (filters = {}, adminKey) => {
         headers: { "x-admin-key": adminKey },
     });
 
-    return response.data;
+    return response?.data;
 };
 
 export const getAdminReportDetails = async (reportId, adminKey) => {
     const response = await api.get(`/admin/reports/${reportId}`, {
         headers: { "x-admin-key": adminKey },
     });
-    return response.data;
+    return response?.data;
 };
 
 export const updateReportStatus = async (reportId, data, adminKey) => {
@@ -179,14 +135,14 @@ export const updateReportStatus = async (reportId, data, adminKey) => {
             headers: { "x-admin-key": adminKey },
         }
     );
-    return response.data;
+    return response?.data;
 };
 
 export const getAdminStats = async (adminKey) => {
     const response = await api.get(`/admin/reports/stats`, {
         headers: { "x-admin-key": adminKey },
     });
-    return response.data;
+    return response?.data;
 };
 
 export default api;

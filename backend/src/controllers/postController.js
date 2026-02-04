@@ -49,32 +49,26 @@ export const getPosts = async (req, res) => {
  */
 export const createPost = async (req, res) => {
     try {
-        // Compatibility Layer: Map frontend fields to backend schema
         const {
-            title, area,
+            category,
             description,
-            category, initialThreatLevel,
-            city
+            city,
+            area,
+            initialThreatLevel,
+            title
         } = req.body;
-
-        // Map 'area' to 'title' if title is missing
-        const finalTitle = title || area;
-        // Map 'initialThreatLevel' to 'category' if category is missing
-        const finalCategory = category || initialThreatLevel;
 
         // Safety: Reject only if critical fields for the schema are missing
         if (!description || !city) {
             return res.status(400).json({ success: false, error: 'Description and City are required' });
         }
 
-        const mediaUrls = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
-
         const post = new Post({
-            title: finalTitle || 'Anonymous Report',
+            title: title || area || 'Anonymous Report',
             description,
-            category: finalCategory || 'Other',
+            category: category || initialThreatLevel || 'Other',
             city,
-            mediaUrls
+            mediaUrls: [] // JSON-only as requested
         });
 
         await post.save();
