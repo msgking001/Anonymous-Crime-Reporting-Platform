@@ -158,9 +158,15 @@ function CreatePost() {
                         onChange={handleChange}
                         rows="5"
                         required
-                        placeholder="Provide details without naming private individuals..."
+                        minLength="50"
+                        placeholder="Provide details without naming private individuals... (Min 50 characters)"
                     />
-                    <p className="char-count">{formData.description.length}/500</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem' }}>
+                        <p className={`char-count ${formData.description.length < 50 ? 'text-warning' : ''}`}>
+                            {formData.description.length < 50 ? `Need ${50 - formData.description.length} more characters` : `${formData.description.length}/1000`}
+                        </p>
+                        <p className="char-count">Min: 50 | Max: 1000</p>
+                    </div>
                 </div>
 
                 <div className="form-row">

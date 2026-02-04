@@ -3,8 +3,6 @@ import axios from "axios";
 /**
  * BASE URL
  * MUST exist in Vercel Environment Variables
- * Example:
- * VITE_API_URL = https://your-backend.onrender.com
  */
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -39,10 +37,10 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// ---------------- PUBLIC FEED (REPORTS) ----------------
+// ---------------- PUBLIC FEED (POSTS) ----------------
 
 /**
- * Get paginated reports feed
+ * Get paginated posts feed
  * @param {number} page
  * @param {object} filters { category, city }
  */
@@ -59,16 +57,60 @@ export const getPosts = async (page = 1, filters = {}) => {
     return response.data;
 };
 
+// ---------------- ANONYMOUS INCIDENT REPORTING ----------------
+
 /**
- * Create a new anonymous report
- * @param {FormData} postData
+ * Create a new anonymous report (Incident Submission)
+ * Maps frontend payload to backend strict validation
+ * @param {FormData} formData
  */
-export const createPost = async (postData) => {
-    const response = await api.post(`/report/create`, postData, {
-        headers: {
-            "Content-Type": "multipart/form-data",
+export const createPost = async (formData) => {
+    let evidenceUrls = [];
+
+    // 1. Handle Media Upload if present
+    const file = formData.get('media'); // 'media' is the field name in CreatePost.jsx
+    if (file) {
+        const uploadData = new FormData();
+        uploadData.append('files', file); // Backend expect 'files' field
+
+        try {
+            const uploadRes = await api.post('/reports/upload', uploadData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (uploadRes.data.success) {
+                evidenceUrls = uploadRes.data.data.urls;
+            }
+        } catch (uploadErr) {
+            console.error('File upload failed, proceeding without media', uploadErr);
+        }
+    }
+
+    // 2. Enum and Data Mapping
+    const category = formData.get('category');
+    const threatMapping = {
+        'low_risk': 'low',
+        'concerning': 'medium',
+        'urgent': 'high',
+        'critical': 'emergency'
+    };
+
+    const payload = {
+        category,
+        crimeType: category === 'cyber_fraud' ? 'cyber' : 'physical',
+        description: formData.get('description'),
+        location: {
+            area: formData.get('area'),
+            city: formData.get('city')
         },
-    });
+        threatLevel: threatMapping[formData.get('initialThreatLevel')] || 'medium',
+        incidentTime: {
+            date: formData.get('timeWindow') ? new Date().toISOString() : undefined
+        },
+        evidenceUrls
+    };
+
+    // 3. Final Submission to the correct legacy endpoint
+    const response = await api.post(`/reports`, payload);
     return response.data;
 };
 
