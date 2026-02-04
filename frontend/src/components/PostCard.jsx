@@ -69,12 +69,12 @@ const PostCard = ({ post }) => {
             {/* Content */}
             <div className="post-content">
                 <p className="post-description">{post.description}</p>
-                {post.mediaUrl && (
+                {(post.mediaUrls?.[0] || post.mediaUrl) && (
                     <div className="media-container">
                         {post.contentType === 'video' ? (
-                            <video controls src={getMediaUrl(post.mediaUrl)} className="post-media" />
+                            <video controls src={getMediaUrl(post.mediaUrls?.[0] || post.mediaUrl)} className="post-media" />
                         ) : (
-                            <img src={getMediaUrl(post.mediaUrl)} alt="Evidence" className="post-media" />
+                            <img src={getMediaUrl(post.mediaUrls?.[0] || post.mediaUrl)} alt="Evidence" className="post-media" />
                         )}
                     </div>
                 )}

@@ -52,6 +52,12 @@ const postSchema = new mongoose.Schema({
         type: Number,
         default: 0,
         index: true
+    },
+    mediaUrls: [String],
+    contentType: {
+        type: String,
+        enum: ['image', 'video', 'none'],
+        default: 'none'
     }
 }, {
     timestamps: true,

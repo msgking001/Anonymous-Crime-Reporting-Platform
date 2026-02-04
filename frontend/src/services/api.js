@@ -37,17 +37,14 @@ export const getPosts = async (page = 1, filters = {}) => {
 
 export const createPost = async (postData) => {
     let payload = postData;
+    let headers = { "Content-Type": "application/json" };
+
     if (postData instanceof FormData) {
-        payload = {
-            category: postData.get('category'),
-            description: postData.get('description'),
-            area: postData.get('area'),
-            city: postData.get('city'),
-            initialThreatLevel: postData.get('initialThreatLevel'),
-            crimeType: postData.get('crimeType') || 'physical'
-        };
+        payload = postData;
+        headers = { "Content-Type": "multipart/form-data" };
     }
-    const response = await api.post(`/api/posts`, payload);
+
+    const response = await api.post(`/api/posts`, payload, { headers });
     return response?.data;
 };
 

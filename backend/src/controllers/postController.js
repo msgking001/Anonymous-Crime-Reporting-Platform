@@ -111,7 +111,8 @@ export const createPost = async (req, res) => {
                 city: effectiveCity || 'Unknown'
             },
             initialThreatLevel: mappedThreatLevel,
-            mediaUrls: []
+            mediaUrls: req.file ? [`/uploads/${req.file.filename}`] : [],
+            contentType: req.file ? (req.file.mimetype.startsWith('video') ? 'video' : 'image') : 'none'
         });
 
         await post.save();
@@ -122,6 +123,8 @@ export const createPost = async (req, res) => {
                 token, // Only shown once
                 reportId,
                 status: 'submitted',
+                mediaUrls: post.mediaUrls,
+                contentType: post.contentType,
                 disclaimer: 'Save your token! It is the only way to track your report.'
             }
         });
@@ -161,6 +164,8 @@ export const checkPostStatus = async (req, res) => {
                 statusMessage: post.statusMessage || 'Your report has been received.',
                 description,
                 location: post.location,
+                mediaUrls: post.mediaUrls,
+                contentType: post.contentType,
                 submittedAt: post.createdAt,
                 lastUpdated: post.updatedAt
             }
