@@ -8,7 +8,7 @@ import fs from 'fs';
 
 import connectDB from './config/db.js';
 import reportRoutes from './routes/reports.js';
-import postRoutes from './routes/posts.js';
+import postRoutes from './routes/postRoutes.js';
 import adminRoutes from './routes/admin.js';
 import { generalLimiter } from './middleware/rateLimiter.js';
 
