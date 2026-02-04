@@ -14,8 +14,13 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-32-char-encryption
  * @returns {string} Encrypted text
  */
 export const encrypt = (text) => {
-    if (!text) return '';
-    return CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString();
+    try {
+        if (!text) return '';
+        return CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString();
+    } catch (e) {
+        console.error('Encryption error:', e);
+        return text; // Fallback to plain text if encryption fails
+    }
 };
 
 /**
@@ -24,9 +29,14 @@ export const encrypt = (text) => {
  * @returns {string} Decrypted plain text
  */
 export const decrypt = (encryptedText) => {
-    if (!encryptedText) return '';
-    const bytes = CryptoJS.AES.decrypt(encryptedText, ENCRYPTION_KEY);
-    return bytes.toString(CryptoJS.enc.Utf8);
+    try {
+        if (!encryptedText) return '';
+        const bytes = CryptoJS.AES.decrypt(encryptedText, ENCRYPTION_KEY);
+        return bytes.toString(CryptoJS.enc.Utf8);
+    } catch (e) {
+        console.error('Decryption error:', e);
+        return encryptedText; // Fallback to ciphertext if decryption fails
+    }
 };
 
 /**
