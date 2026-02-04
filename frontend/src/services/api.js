@@ -55,7 +55,7 @@ export const getPosts = async (page = 1, filters = {}) => {
     if (filters.category) params.append("category", filters.category);
     if (filters.city) params.append("city", filters.city);
 
-    const response = await api.get(`/reports?${params.toString()}`);
+    const response = await api.get(`/posts?${params.toString()}`);
     return response.data;
 };
 
@@ -64,7 +64,7 @@ export const getPosts = async (page = 1, filters = {}) => {
  * @param {FormData} postData
  */
 export const createPost = async (postData) => {
-    const response = await api.post(`/reports`, postData, {
+    const response = await api.post(`/posts`, postData, {
         headers: {
             "Content-Type": "multipart/form-data",
         },
@@ -80,7 +80,7 @@ export const createPost = async (postData) => {
  * @param {string} voteType
  */
 export const submitVote = async (reportId, voteType) => {
-    const response = await api.post(`/reports/${reportId}/vote`, {
+    const response = await api.post(`/posts/${reportId}/vote`, {
         voteType,
     });
     return response.data;
@@ -91,7 +91,7 @@ export const submitVote = async (reportId, voteType) => {
  * @param {string} reportId
  */
 export const checkVoteStatus = async (reportId) => {
-    const response = await api.get(`/reports/${reportId}/vote`);
+    const response = await api.get(`/posts/${reportId}/vote`);
     return response.data;
 };
 
