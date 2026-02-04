@@ -194,7 +194,7 @@ All admin endpoints require `x-admin-key` header.
 │  1. Submits report  ─────►  2. Generate random token        │
 │     (no identity)              (16 alphanumeric chars)      │
 │                                                             │
-│  3. Receives token  ◄─────  4. Store HASHED token only     │
+│  3. Receives token  ◄─────  4. Store HASHED token only      │
 │     (save this!)               (SHA-256, irreversible)      │
 │                                                             │
 │  5. Uses token to   ─────►  6. Hash input, compare to       │
@@ -269,6 +269,20 @@ cd frontend
 npm install
 npm run dev
 ```
+
+### ⚠️ Windows PowerShell Users
+If you encounter an "execution of scripts is disabled" error, use **npm.cmd** explicitly:
+
+```bash
+# Backend
+npm.cmd run dev
+
+# Frontend
+npm.cmd run dev
+```
+
+Alternatively, you can update your execution policy (requires Admin):
+`Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`
 
 ### Environment Variables
 
