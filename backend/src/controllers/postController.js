@@ -5,6 +5,7 @@ import VoteTrack from '../models/VoteTrack.js';
 /**
  * GET /api/posts
  * Public feed with pagination and filters
+ * Always returns 200, even if result set is empty.
  */
 export const getPosts = async (req, res) => {
     try {
@@ -23,17 +24,20 @@ export const getPosts = async (req, res) => {
 
         const total = await Post.countDocuments(filter);
 
-        res.json({
+        // Always return success: true and the data array
+        // This prevents 404s on empty pages as requested
+        res.status(200).json({
             success: true,
-            data: posts,
+            data: posts || [],
             pagination: {
                 page,
                 limit,
                 total,
-                pages: Math.ceil(total / limit)
+                pages: Math.ceil(total / limit) || 0
             }
         });
     } catch (error) {
+        console.error('getPosts error:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 };
@@ -41,21 +45,34 @@ export const getPosts = async (req, res) => {
 /**
  * POST /api/posts
  * Create an anonymous post
+ * Includes compatibility layer for frontend field names
  */
 export const createPost = async (req, res) => {
     try {
-        const { title, description, category, city } = req.body;
+        // Compatibility Layer: Map frontend fields to backend schema
+        const {
+            title, area,
+            description,
+            category, initialThreatLevel,
+            city
+        } = req.body;
 
-        if (!title || !description || !category || !city) {
-            return res.status(400).json({ success: false, error: 'Missing required fields' });
+        // Map 'area' to 'title' if title is missing
+        const finalTitle = title || area;
+        // Map 'initialThreatLevel' to 'category' if category is missing
+        const finalCategory = category || initialThreatLevel;
+
+        // Safety: Reject only if critical fields for the schema are missing
+        if (!description || !city) {
+            return res.status(400).json({ success: false, error: 'Description and City are required' });
         }
 
         const mediaUrls = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
 
         const post = new Post({
-            title,
+            title: finalTitle || 'Anonymous Report',
             description,
-            category,
+            category: finalCategory || 'Other',
             city,
             mediaUrls
         });
@@ -64,6 +81,7 @@ export const createPost = async (req, res) => {
 
         res.status(201).json({ success: true, data: post });
     } catch (error) {
+        console.error('createPost error:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 };
@@ -120,6 +138,7 @@ export const submitVote = async (req, res) => {
 
         res.json({ success: true, message: 'Vote recorded' });
     } catch (error) {
+        console.error('submitVote error:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 };
@@ -138,6 +157,7 @@ export const checkVoteStatus = async (req, res) => {
         const vote = await VoteTrack.findOne({ postId: id, sessionId });
         res.json({ success: true, voted: !!vote, voteType: vote?.voteType || null });
     } catch (error) {
+        console.error('checkVoteStatus error:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 };
