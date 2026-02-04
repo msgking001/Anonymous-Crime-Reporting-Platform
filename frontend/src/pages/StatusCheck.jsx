@@ -152,19 +152,19 @@ function StatusCheck() {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            background: statusConfig.bg,
+                            background: statusConfig?.bg || 'rgba(0,0,0,0.1)',
                             borderRadius: '50%',
                             fontSize: '40px'
                         }}>
-                            {statusConfig.icon}
+                            {statusConfig?.icon || '📄'}
                         </div>
                         <span className="badge" style={{
-                            background: statusConfig.bg,
-                            color: statusConfig.color,
+                            background: statusConfig?.bg || 'var(--color-bg-elevated)',
+                            color: statusConfig?.color || 'var(--color-text)',
                             fontSize: '0.9rem',
                             padding: '0.5rem 1rem'
                         }}>
-                            {statusConfig.label}
+                            {statusConfig?.label || 'Processing'}
                         </span>
                     </div>
 

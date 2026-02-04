@@ -11,10 +11,8 @@ dotenv.config();
 
 const app = express();
 
-// Strict CORS implementation
-const allowedOrigin = 'https://anonymouscrimereportingplatform.vercel.app';
 app.use(cors({
-    origin: [allowedOrigin, 'http://localhost:5173'],
+    origin: "*",
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'x-session-id', 'x-admin-key'],
     credentials: true

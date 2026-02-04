@@ -89,8 +89,8 @@ function AdminDashboard() {
         try {
             const result = await getAdminReports(filters, adminKey);
             if (result.success) {
-                setReports(result.data.reports);
-                setPagination(result.data.pagination);
+                setReports(result.data?.reports || []);
+                setPagination(result.data?.pagination || null);
             }
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to load reports');
@@ -246,7 +246,7 @@ function AdminDashboard() {
                     <div className="card" style={{ textAlign: 'center' }}>
                         <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Submitted</p>
                         <p style={{ margin: '0.5rem 0 0', fontSize: '2rem', fontWeight: 600, color: '#3b82f6' }}>
-                            {stats.byStatus?.submitted || 0}
+                            {stats?.byStatus?.submitted || 0}
                         </p>
                     </div>
                     <div className="card" style={{ textAlign: 'center' }}>
@@ -375,7 +375,7 @@ function AdminDashboard() {
                                         <td>{report.location?.city}</td>
                                         <td>
                                             <span className={`badge badge-${report.threatLevel === 'emergency' || report.threatLevel === 'high' ? 'danger' :
-                                                    report.threatLevel === 'medium' ? 'warning' : 'success'
+                                                report.threatLevel === 'medium' ? 'warning' : 'success'
                                                 }`}>
                                                 {report.threatLevel}
                                             </span>
@@ -481,7 +481,7 @@ function AdminDashboard() {
                                         <div>
                                             <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Threat Level</p>
                                             <span className={`badge badge-${selectedReport.threatLevel === 'emergency' || selectedReport.threatLevel === 'high' ? 'danger' :
-                                                    selectedReport.threatLevel === 'medium' ? 'warning' : 'success'
+                                                selectedReport.threatLevel === 'medium' ? 'warning' : 'success'
                                                 }`}>
                                                 {selectedReport.threatLevel}
                                             </span>
