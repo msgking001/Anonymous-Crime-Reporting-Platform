@@ -1,5 +1,5 @@
 import express from 'express';
-import Post from '../models/Post.js'; // Switched to Post model
+import Post from '../models/Post.js';
 import { adminAuth } from '../middleware/adminAuth.js';
 import { statusUpdateValidation, handleValidationErrors } from '../middleware/sanitizer.js';
 
@@ -34,7 +34,7 @@ router.get('/reports', async (req, res) => {
         if (category) filter.category = category;
         if (status) filter.status = status;
         if (initialThreatLevel) filter.initialThreatLevel = initialThreatLevel;
-        if (spamFlag !== undefined) filter['moderation.flagged'] = spamFlag === 'true'; // Mapped to moderation.flagged
+        if (spamFlag !== undefined) filter['moderation.flagged'] = spamFlag === 'true';
         if (city) filter['location.city'] = new RegExp(city, 'i');
 
         // Threat score range
@@ -59,20 +59,20 @@ router.get('/reports', async (req, res) => {
             Post.countDocuments(filter)
         ]);
 
-        // Transform posts to match expected Admin UI format where necessary
+        // Transform posts to match expected Admin UI format
         const reports = posts.map(post => ({
-            reportId: post.postId,
+            reportId: post.postId || post._id,
             category: post.category,
-            crimeType: post.category, // reuse category as type
+            crimeType: post.category,
             description: post.description,
-            location: post.location,
-            status: post.status,
-            threatLevel: post.initialThreatLevel, // Use initial or computed? Using initial for display
-            urgencyScore: post.threatScore, // Map threatScore to urgencyScore
-            confidenceScore: post.evidenceScore, // Map evidenceScore to confidenceScore
+            location: post.location || { city: post.city },
+            status: post.status || 'submitted',
+            threatLevel: post.initialThreatLevel || 'concerning',
+            urgencyScore: post.severityScore,
+            confidenceScore: post.evidenceScore || 0,
             createdAt: post.createdAt,
-            spamFlag: post.moderation.flagged,
-            evidenceUrls: post.mediaUrl ? [post.mediaUrl] : []
+            spamFlag: post.moderation?.flagged || false,
+            evidenceUrls: post.mediaUrls || []
         }));
 
         res.json({
@@ -123,7 +123,7 @@ router.get('/reports/stats', async (req, res) => {
                 { $group: { _id: null, avg: { $avg: '$evidenceScore' } } }
             ]),
             Post.aggregate([
-                { $group: { _id: null, avg: { $avg: '$threatScore' } } }
+                { $group: { _id: null, avg: { $avg: '$severityScore' } } }
             ])
         ]);
 
@@ -131,9 +131,9 @@ router.get('/reports/stats', async (req, res) => {
             success: true,
             data: {
                 totalReports,
-                byStatus: byStatus.reduce((acc, item) => ({ ...acc, [item._id]: item.count }), {}),
+                byStatus: byStatus.reduce((acc, item) => ({ ...acc, [item._id || 'unknown']: item.count }), {}),
                 byCategory: byCategory.reduce((acc, item) => ({ ...acc, [item._id]: item.count }), {}),
-                byAuthority: {}, // Not currently used in Post model
+                byAuthority: {},
                 spamCount,
                 avgConfidence: avgConfidence[0]?.avg || 0,
                 avgUrgency: avgUrgency[0]?.avg || 0
@@ -157,7 +157,7 @@ router.get('/reports/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
-        const post = await Post.findOne({ postId: id });
+        const post = await Post.findById(id) || await Post.findOne({ postId: id });
 
         if (!post) {
             return res.status(404).json({
@@ -166,21 +166,20 @@ router.get('/reports/:id', async (req, res) => {
             });
         }
 
-        // Map to expected format
         const reportObj = {
-            reportId: post.postId,
+            reportId: post.postId || post._id,
             category: post.category,
             crimeType: post.category,
             description: post.description,
-            location: post.location,
-            status: post.status,
+            location: post.location || { city: post.city },
+            status: post.status || 'submitted',
             statusMessage: post.statusMessage,
-            threatLevel: post.initialThreatLevel,
-            urgencyScore: post.threatScore,
-            confidenceScore: post.evidenceScore,
+            threatLevel: post.initialThreatLevel || 'concerning',
+            urgencyScore: post.severityScore,
+            confidenceScore: post.evidenceScore || 0,
             createdAt: post.createdAt,
-            spamFlag: post.moderation.flagged,
-            evidenceUrls: post.mediaUrl ? [post.mediaUrl] : [],
+            spamFlag: post.moderation?.flagged || false,
+            evidenceUrls: post.mediaUrls || [],
             votes: post.votes
         };
 
@@ -214,7 +213,7 @@ router.patch('/reports/:id/status',
             if (statusMessage !== undefined) updateFields.statusMessage = statusMessage;
 
             const post = await Post.findOneAndUpdate(
-                { postId: id },
+                { $or: [{ _id: mongoose.isValidObjectId(id) ? id : null }, { postId: id }] },
                 updateFields,
                 { new: true }
             );
@@ -230,7 +229,7 @@ router.patch('/reports/:id/status',
                 success: true,
                 message: 'Report status updated',
                 data: {
-                    reportId: post.postId,
+                    reportId: post.postId || post._id,
                     status: post.status,
                     statusMessage: post.statusMessage
                 }

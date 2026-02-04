@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Post from '../models/Post.js';
+import VoteTrack from '../models/VoteTrack.js';
 
 /**
  * GET /api/posts
@@ -86,17 +87,7 @@ export const submitVote = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Invalid vote type' });
         }
 
-        // Tracking votes to enforce session-based restriction
-        // Using a separate collection for vote tracking to allow session-based lookups
-        const VoteTrack = mongoose.models.VoteTrack || mongoose.model('VoteTrack', new mongoose.Schema({
-            postId: mongoose.Schema.Types.ObjectId,
-            sessionId: String,
-            voteType: String
-        }));
-
         const existingVote = await VoteTrack.findOne({ postId: id, sessionId });
-
-        // Weight calculation logic
         const weights = { low_risk: 1, concerning: 3, urgent: 6, critical: 10 };
 
         if (existingVote) {
@@ -104,7 +95,6 @@ export const submitVote = async (req, res) => {
                 return res.json({ success: true, message: 'Already voted' });
             }
 
-            // Atomic update: decrement old, increment new
             const update = {
                 $inc: {
                     [`votes.${existingVote.voteType}`]: -1,
@@ -117,7 +107,6 @@ export const submitVote = async (req, res) => {
             existingVote.voteType = voteType;
             await existingVote.save();
         } else {
-            // New vote
             const update = {
                 $inc: {
                     [`votes.${voteType}`]: 1,
@@ -145,9 +134,6 @@ export const checkVoteStatus = async (req, res) => {
         const sessionId = req.headers['x-session-id'];
 
         if (!sessionId) return res.json({ success: true, voted: false });
-
-        const VoteTrack = mongoose.models.VoteTrack;
-        if (!VoteTrack) return res.json({ success: true, voted: false });
 
         const vote = await VoteTrack.findOne({ postId: id, sessionId });
         res.json({ success: true, voted: !!vote, voteType: vote?.voteType || null });

@@ -45,6 +45,7 @@ const postSchema = new mongoose.Schema({
 // Compound index for feed sorting and filtering
 postSchema.index({ createdAt: -1 });
 
-const Post = mongoose.model('Post', postSchema);
+// Safe compilation pattern for production
+const Post = mongoose.models.Post || mongoose.model('Post', postSchema);
 
 export default Post;

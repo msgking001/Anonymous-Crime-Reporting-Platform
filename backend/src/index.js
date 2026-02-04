@@ -2,9 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import connectDB from '../config/db.js';
-import reportRoutes from '../routes/reports.js';
-import adminRoutes from '../routes/admin.js';
+import connectDB from './config/db.js';
+import reportRoutes from './routes/reportRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import postRoutes from './routes/postRoutes.js';
 
 dotenv.config();
@@ -14,7 +14,7 @@ const app = express();
 // Strict CORS implementation
 const allowedOrigin = 'https://anonymouscrimereportingplatform.vercel.app';
 app.use(cors({
-    origin: [allowedOrigin, 'http://localhost:5173'], // Allowing local dev too
+    origin: [allowedOrigin, 'http://localhost:5173'],
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'x-session-id', 'x-admin-key'],
     credentials: true
@@ -32,7 +32,7 @@ connectDB();
 
 // Routes
 app.use('/api/posts', postRoutes);
-app.use('/api/reports', reportRoutes); // Assuming existing routes are in backend/routes/
+app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health Check
